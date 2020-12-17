@@ -537,7 +537,7 @@ namespace Infotekka.ND.ClrExtract
             public const string Diploma = "Diploma";
             public const string Achievement = "Achievement";
             public const string Course = "Course";
-            public const string Transcript = "Transcript";
+            public const string Transcript = "ext:Transcript";
             public const string SchoolEnrollment = "ext:SchoolEnrollment";
             public const string SchoolExit = "ext:SchoolExit";
         }
