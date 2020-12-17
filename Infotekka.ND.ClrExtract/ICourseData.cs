@@ -37,5 +37,7 @@ namespace Infotekka.ND.ClrExtract
         bool CteCourse { get; }
 
         bool ExcludeFromGpa { get; }
+
+        string CourseUri { get; }
     }
 }

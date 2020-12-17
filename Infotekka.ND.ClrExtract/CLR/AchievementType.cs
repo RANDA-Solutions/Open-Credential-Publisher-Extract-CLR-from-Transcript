@@ -44,5 +44,8 @@ namespace Infotekka.ND.ClrExtract.CLR
 
         [JsonProperty("hsx:Course")]
         public CourseType Course { get; set; }
+
+        [JsonProperty("alignments")]
+        public AlignmentType[] Alignments { get; set; }
     }
 }

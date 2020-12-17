@@ -18,6 +18,9 @@ namespace Infotekka.ND.ClrExtract.CLR
         [JsonProperty("recipient")]
         public RecipientType Recipient { get; set; }
 
+        [JsonProperty("evidence")]
+        public EvidenceType[] Evidence { get; set; }
+
         [JsonProperty("creditsEarned")]
         public decimal? CreditsEarned { get; set; }
 

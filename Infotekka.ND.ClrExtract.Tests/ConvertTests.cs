@@ -2,9 +2,10 @@
 using Infotekka.ND.ClrExtract;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Infotekka.ND.ClrExtract.CLR;
-using Infotekka.ND.ClrExtract.Tests.CLR;
 
 namespace Infotekka.ND.ClrExtract.Tests
 {
@@ -12,38 +13,15 @@ namespace Infotekka.ND.ClrExtract.Tests
     public class ConvertTests
     {
         [TestMethod()]
-        public void GenerateClrTest() {
-            string sourceId = Guid.NewGuid().ToString();
+        public void ClrFromJsonTest() {
+            string jsonData = System.IO.File.ReadAllText("../../../resources/sample clr.json");
 
-            var t = new TranscriptData() {
-                FirstName = "test",
-                LastName = "user",
-                GPAs = new GpaClassRankData[0],
-                DistrictAddress = new AddressData(),
-                SchoolAddress = new AddressData(),
-                SchoolIds = new IdentityData[0],
-                StudentIds = new IdentityData[0],
-                StudentAddress = new AddressData()
-            };
+            var model = Convert.ClrFromJson(jsonData);
 
-            var c = new CourseData[] {
-                new CourseData() {
-                    CourseTitle = "test course",
-                    GradeLevel = "11"
-                },
-                new CourseData() {
-                    CourseTitle = "another test",
-                    GradeLevel = "11"
-                }
-            };
-
-            var issuerId = Guid.NewGuid();
-            var recipientId = Guid.NewGuid();
-
-            var clr = Convert.GenerateClr(sourceId, issuerId, recipientId, t, c);
-
-            Assert.IsNotNull(clr);
-            Assert.AreEqual("test user", clr.Learner.Name);
+            Assert.AreEqual("Student Transcript", model.Name);
+            Assert.AreEqual("Student3 Demo", model.Learner.Name);
+            Assert.AreEqual("Bismarck High School", model.Publisher.Name);
+            Assert.IsTrue(model.Assertions.Length > 0);
         }
 
         [TestMethod()]
@@ -67,18 +45,6 @@ namespace Infotekka.ND.ClrExtract.Tests
             string jsonData = Convert.JsonFromClr(clrData);
 
             Assert.IsNotNull(jsonData);
-        }
-
-        [TestMethod()]
-        public void ClrFromJsonTest() {
-            string jsonData = System.IO.File.ReadAllText("../../../resources/sample clr.json");
-
-            var model = Convert.ClrFromJson(jsonData);
-
-            Assert.AreEqual("Student Transcript", model.Name);
-            Assert.AreEqual("Student3 Demo", model.Learner.Name);
-            Assert.AreEqual("Bismarck High School", model.Publisher.Name);
-            Assert.IsTrue(model.Assertions.Length > 0);
         }
     }
 }

@@ -29,7 +29,8 @@ namespace Infotekka.ND.ClrExtract
         /// <param name="Transcript">Transcript data</param>
         /// <param name="Courses">Course data</param>
         /// <returns><see cref="ClrRoot"/> object that can be converted to JSON</returns>
-        public static ClrRoot GenerateClr(string ClrSourcedId, Guid IssuerId, Guid RecipientId, ITranscriptData Transcript, ICourseData[] Courses) {
+        public static ClrRoot GenerateClr(string ClrSourcedId, Guid IssuerId, Guid RecipientId, ITranscriptData Transcript, ICourseData[] Courses, IAssessmentData[] Assessments, byte[] TranscriptPdfData) {
+            string base64Transcript = System.Convert.ToBase64String(TranscriptPdfData);
 
             Guid clrId = Guid.NewGuid();
             var recipient = new RecipientType() {
@@ -73,6 +74,33 @@ namespace Infotekka.ND.ClrExtract
             };
 
             List<AssertionType> coreAssertions = new List<AssertionType>();
+
+            //Transcript PDF
+            if(TranscriptPdfData != null) {
+                coreAssertions.Add(new AssertionType() {
+                    ID = $"urn:uuid:{Guid.NewGuid()}",
+                    IssuedOn = issuedOn,
+                    Achievement = new AchievementType() {
+                        ID = $"urn:uuid:{Guid.NewGuid()}",
+                        Name = "Transcript Document",
+                        Issuer = publisher,
+                        TypeOfAchievement = AchievementTypes.Transcript,
+                        Description = "Transcript PDF"
+                    },
+                    Recipient = recipient,
+                    Evidence = new EvidenceType[] {
+                        new EvidenceType() {
+                            Name = "Transcript",
+                            Artifacts = new ArtifactType[] {
+                                new ArtifactType() {
+                                    Description = "PDF Transcript",
+                                    Url = $"data:application/pdf;base64,{base64Transcript}"
+                                }
+                            }
+                        }
+                    }
+                });
+            }
 
             //Graduation
             if (Transcript.Graduated) {
@@ -340,6 +368,43 @@ namespace Infotekka.ND.ClrExtract
             creditTotals.Results = creditResults.ToArray();
             coreAssertions.Add(creditTotals);
 
+            foreach (var a in Assessments) {
+                Dictionary<Guid, KeyValuePair<string, decimal>> dIds = a
+                    .CategoryScores
+                    .ToDictionary(k => Guid.NewGuid(), v => new KeyValuePair<string, decimal>(v.Key, v.Value));
+
+                var assessmentResults = new AssertionType() {
+                    ID = $"urn:uuid:{Guid.NewGuid()}",
+                    Achievement = new AchievementType() {
+                        ID = $"urn:uuid:{Guid.NewGuid()}",
+                        Name = a.Name,
+                        Description = a.Description,
+                        Issuer = publisher,
+                        TypeOfAchievement = AchievementTypes.Achievement,
+                        ResultDescriptions = dIds
+                            .Select(s => new ResultDescriptionType() {
+                                ID = $"urn:uuid:{s.Key}",
+                                Name = s.Value.Key,
+                                ResultType = "Result"
+                            })
+                            .ToArray(),
+                        Tags = new string[] {
+                            a.AssessmentType,
+                            "Unofficial"
+                        }
+                    },
+                    Recipient = recipient,
+                    IssuedOn = a.DateTaken,
+                    Results = dIds
+                        .Select(s => new ResultType() {
+                            ResultDescription = $"urn:uuid:{s.Key}",
+                            Value = $"{s.Value.Value}"
+                        })
+                        .ToArray()
+                };
+                coreAssertions.Add(assessmentResults);
+            }
+
             //Build CLR
             var clr = new ClrRoot() {
                 Context = context,
@@ -408,7 +473,16 @@ namespace Infotekka.ND.ClrExtract
                     FieldOfStudy = Course.StateSubjectDesc,
                     Level = Course.GradeLevel,
                     ResultDescriptions = null,
-                    Tags = null
+                    Tags = null,
+                    Alignments = new AlignmentType[] {
+                        new AlignmentType() {
+                            TargetCode = Course.StateCourseId,
+                            TargetName = Course.CourseTitle,
+                            TargetUrl = Course.CourseUri,
+                            TargetType = "CFItem",
+                            TargetFramework = "North Dakota State Course Codes"
+                        }
+                    }
                 },
                 Results = null
             };
@@ -463,6 +537,7 @@ namespace Infotekka.ND.ClrExtract
             public const string Diploma = "Diploma";
             public const string Achievement = "Achievement";
             public const string Course = "Course";
+            public const string Transcript = "Transcript";
             public const string SchoolEnrollment = "ext:SchoolEnrollment";
             public const string SchoolExit = "ext:SchoolExit";
         }
