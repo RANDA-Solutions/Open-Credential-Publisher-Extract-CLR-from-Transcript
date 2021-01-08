@@ -14,7 +14,7 @@ namespace Infotekka.ND.ClrExtract
 
         decimal CreditsReceived { get; }
 
-        int CreditsAttempted { get; }
+        decimal CreditsAttempted { get; }
 
         string TermName { get; }
 
