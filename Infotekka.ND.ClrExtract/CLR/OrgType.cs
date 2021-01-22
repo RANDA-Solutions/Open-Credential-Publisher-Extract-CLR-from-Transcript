@@ -5,18 +5,18 @@ using Newtonsoft.Json;
 
 namespace Infotekka.ND.ClrExtract.CLR
 {
-    public class OrgType
+    public class OrgType : IssuerType
     {
+        [JsonProperty("@context")]
+        public string Context { get; set; }
+
         [JsonProperty("type")]
         public string Type { get; set; }
 
-        [JsonProperty("name")]
-        public string Name { get; set; }
+        [JsonProperty("official")]
+        public string Official { get; set; }
 
-        [JsonProperty("districtIds")]
-        public DistrictIdType[] DistrictIds { get; set; }
-
-        [JsonProperty("address")]
-        public AddressType Address { get; set; }
+        [JsonProperty("parentOrg")]
+        public OrgType ParentOrg { get; set; }
     }
 }

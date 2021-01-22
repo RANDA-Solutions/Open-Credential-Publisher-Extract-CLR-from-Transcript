@@ -28,7 +28,7 @@ namespace Infotekka.ND.ClrExtract.CLR
         public LearnerType Learner { get; set; }
 
         [JsonProperty("publisher")]
-        public PublisherType Publisher { get; set; }
+        public OrgType Publisher { get; set; }
 
         [JsonProperty("assertions")]
         public AssertionType[] Assertions { get; set; }

@@ -21,13 +21,7 @@ namespace Infotekka.ND.ClrExtract.CLR
         [JsonProperty("studentId")]
         public string StudentId { get; set; }
 
-        [JsonProperty("hsx:Identification")]
-        public IdentificationType Identification { get; set; }
-
-        [JsonProperty("hsx:Enrollment")]
-        public EnrollmentType Enrollment { get; set; }
-
-        [JsonProperty("hsx:Demographic")]
-        public DemographicType Demographic { get; set; }
+        [JsonProperty("birthdate")]
+        public DateTime Birthdate { get; set; }
     }
 }

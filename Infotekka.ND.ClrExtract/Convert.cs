@@ -10,7 +10,7 @@ namespace Infotekka.ND.ClrExtract
 {
     public static class Convert
     {
-        const string context = "https://contexts.ward.guru/clr_v1p0.jsonld";
+        //const string context = "https://contexts.ward.guru/clr_v1p0.jsonld";
 
         public static ClrRoot ClrFromJson(string JsonData) {
             return JsonConvert.DeserializeObject<ClrRoot>(JsonData);
@@ -31,15 +31,17 @@ namespace Infotekka.ND.ClrExtract
         /// <returns><see cref="ClrRoot"/> object that can be converted to JSON</returns>
         public static ClrRoot GenerateClr(string ClrSourcedId, Guid IssuerId, Guid RecipientId, ITranscriptData Transcript, ICourseData[] Courses, IAssessmentData[] Assessments, byte[] TranscriptPdfData) {
             string base64Transcript = System.Convert.ToBase64String(TranscriptPdfData);
+            Guid parentOrgId = Guid.NewGuid();
 
             Guid clrId = Guid.NewGuid();
             var recipient = new RecipientType() {
                 Type = "id",
-                Identity = $"urn:uuid:{RecipientId}"
+                Identity = $"urn:uuid:{RecipientId}",
+                Hashed = false
             };
             DateTime issuedOn = DateTime.UtcNow;
 
-            var publisher = new PublisherType() {
+            var publisher = new OrgType() {
                 ID = $"urn:uuid:{IssuerId}",
                 Name = Transcript.SchoolName,
                 SourcedId = ClrSourcedId,
@@ -51,24 +53,22 @@ namespace Infotekka.ND.ClrExtract
                     PostalCode = Transcript.SchoolAddress.Zip,
                     addressCountry = Transcript.SchoolAddress.Country
                 },
-                School = new SchoolType() {
-                    Context = context,
-                    Type = "School",
-                    Principal = Transcript.Principal,
-                    SchoolIds = Transcript.SchoolIds.Select(s => new SchoolIdType() {
-                        StudentIdentifier = s.Identifier,
-                        StudentIdentificationSystem = s.IdentificationSystem
-                    }).ToArray(),
-                    ParentOrg = new OrgType() {
-                        Type = "District",
-                        Name = Transcript.DistrictName,
-                        Address = new AddressType() {
-                            StreetAddress = (Transcript.DistrictAddress.Address1 + " " + Transcript.SchoolAddress.Address2).Trim(),
-                            AddressRegion = Transcript.DistrictAddress.State,
-                            AddressLocality = Transcript.DistrictAddress.City,
-                            PostalCode = Transcript.DistrictAddress.Zip,
-                            addressCountry = Transcript.DistrictAddress.Country
-                        }
+                Description = "School",
+                Official = Transcript.Principal,
+                Identifiers = Transcript.SchoolIds.Select(s => new IdentifierType() {
+                    Identifier = s.Identifier,
+                    IdentifierTypeName = s.IdentificatierType
+                }).ToArray(),
+                ParentOrg = new OrgType() {
+                    ID = $"urn:uuid:{parentOrgId}",
+                    Description = "District",
+                    Name = Transcript.DistrictName,
+                    Address = new AddressType() {
+                        StreetAddress = (Transcript.DistrictAddress.Address1 + " " + Transcript.SchoolAddress.Address2).Trim(),
+                        AddressRegion = Transcript.DistrictAddress.State,
+                        AddressLocality = Transcript.DistrictAddress.City,
+                        PostalCode = Transcript.DistrictAddress.Zip,
+                        addressCountry = Transcript.DistrictAddress.Country
                     }
                 }
             };
@@ -76,7 +76,7 @@ namespace Infotekka.ND.ClrExtract
             List<AssertionType> coreAssertions = new List<AssertionType>();
 
             //Transcript PDF
-            if(TranscriptPdfData != null) {
+            if (TranscriptPdfData != null) {
                 coreAssertions.Add(new AssertionType() {
                     ID = $"urn:uuid:{Guid.NewGuid()}",
                     IssuedOn = issuedOn,
@@ -104,9 +104,10 @@ namespace Infotekka.ND.ClrExtract
 
             //Graduation
             if (Transcript.Graduated) {
+                string gradId = $"urn:uuid:{Guid.NewGuid()}";
                 coreAssertions.Add(new AssertionType() {
                     ID = $"urn:uuid:{Guid.NewGuid()}",
-                    IssuedOn = (DateTime)Transcript.GraduationDate,
+                    IssuedOn = issuedOn,
                     Recipient = recipient,
                     Achievement = new AchievementType() {
                         ID = $"urn:uuid:{Guid.NewGuid()}",
@@ -115,10 +116,24 @@ namespace Infotekka.ND.ClrExtract
                         TypeOfAchievement = AchievementTypes.Diploma,
                         Description = "High School Graduation",
                         Requirement = new RequirementType() {
-                            ID = $"urn:uuid{Guid.NewGuid()}",
+                            ID = $"urn:uuid:{Guid.NewGuid()}",
                             Narrative = "Completion of graduation requirements"
+                        },
+                        ResultDescriptions = new ResultDescriptionType[] {
+                            new ResultDescriptionType() {
+                                ID = gradId,
+                                Name = "Graduation Status",
+                                ResultType = "Status"
+                            }
                         }
-                    }
+                    },
+                    Results = new ResultType[] {
+                        new ResultType() {
+                            ResultDescription = gradId,
+                            Status = "Completed"
+                        }
+                    },
+                    ActivityEndDate = Transcript.GraduationDate
                 });
             }
 
@@ -405,9 +420,26 @@ namespace Infotekka.ND.ClrExtract
                 coreAssertions.Add(assessmentResults);
             }
 
+            //Awards
+            foreach(var a in Transcript.Awards) {
+                coreAssertions.Add(new AssertionType() {
+                    ID = $"urn:uuid:{Guid.NewGuid()}",
+                    IssuedOn = a.Awarded,
+                    Recipient = recipient,
+                    Achievement = new AchievementType() {
+                        ID = $"urn:uuid:{Guid.NewGuid()}",
+                        Name = a.Name,
+                        Issuer = publisher,
+                        TypeOfAchievement = AchievementTypes.Award,
+                        Description = a.Description,
+                        Image = a.Image
+                    }
+                });
+            }
+
             //Build CLR
             var clr = new ClrRoot() {
-                Context = context,
+                //Context = context,
                 ID = $"urn:uuid:{clrId}",
                 Name = "Student Transcript",
                 Partial = true,
@@ -420,14 +452,10 @@ namespace Infotekka.ND.ClrExtract
                     FamilyName = Transcript.LastName,
                     SourcedId = Transcript.SourcedId,
                     StudentId = Transcript.StudentId,
-                    Identification = new IdentificationType() {
-                        Context = context,
-                        Type = "Identification",
-                        StudentIds = Transcript.StudentIds.Select(s => new StudentIdType() {
-                            StudentIdentifier = s.Identifier,
-                            StudentIdentificationSystem = s.IdentificationSystem
-                        }).ToArray()
-                    },
+                    Identifiers = Transcript.StudentIds.Select(s => new IdentifierType() {
+                        Identifier = s.Identifier,
+                        IdentifierTypeName = s.IdentificatierType
+                    }).ToArray(),
                     Telephone = Transcript.StudentPhone,
                     Address = new AddressType() {
                         StreetAddress = (Transcript.StudentAddress.Address1 + " " + Transcript.StudentAddress.Address2).Trim(),
@@ -436,17 +464,13 @@ namespace Infotekka.ND.ClrExtract
                         PostalCode = Transcript.StudentAddress.Zip,
                         addressCountry = Transcript.StudentAddress.Country
                     },
-                    Enrollment = new EnrollmentType() {
-                        Context = context,
-                        Type = "Enrollment",
-                        CurrentGrade = Transcript.GradeLevel,
-                        GraduationDate = Transcript.GraduationDate
-                    },
-                    Demographic = new DemographicType() {
-                        Context = context,
-                        Type = "Demographic",
-                        Birthdate = Transcript.DateOfBirth
-                    }
+                    //Enrollment = new EnrollmentType() {
+                    //    //Context = context,
+                    //    Type = "Enrollment",
+                    //    CurrentGrade = Transcript.GradeLevel,
+                    //    GraduationDate = Transcript.GraduationDate
+                    //},
+                    Birthdate = Transcript.DateOfBirth
                 },
                 Publisher = publisher,
                 Assertions = coreAssertions
@@ -457,7 +481,7 @@ namespace Infotekka.ND.ClrExtract
             return clr;
         }
 
-        private static AssertionType courseAssertion(ICourseData Course, PublisherType Publisher, RecipientType Recipient) {
+        private static AssertionType courseAssertion(ICourseData Course, OrgType Publisher, RecipientType Recipient) {
             var ca = new AssertionType() {
                 ID = $"urn:uuid:{Guid.NewGuid()}",
                 Recipient = Recipient,
@@ -484,7 +508,10 @@ namespace Infotekka.ND.ClrExtract
                         }
                     }
                 },
-                Results = null
+                Results = null,
+                Verification = new VerificationType() {
+                    Type = VerificationTypes.Signed
+                }
             };
 
             Guid resultId = Guid.NewGuid();
@@ -518,18 +545,33 @@ namespace Infotekka.ND.ClrExtract
 
             ca.Achievement.Tags = tags.ToArray();
 
+            List<IdentifierType> courseIds = new List<IdentifierType>();
+            if (!String.IsNullOrEmpty(Course.LocalCourseId)) {
+                courseIds.Add(new IdentifierType() {
+                    Identifier = Course.LocalCourseId,
+                    IdentifierTypeName = IdentifierTypes.SeaCourseId
+                });
+            };
             if (!String.IsNullOrEmpty(Course.StateCourseId)) {
-                ca.Achievement.Course = new CourseType() {
-                    Context = context,
-                    Type = "Course",
-                    CourseId = new CourseIdType() {
-                        CourseIdentifier = Course.StateCourseId,
-                        CourseCodeSystem = "State"
-                    }
-                };
+                courseIds.Add(new IdentifierType() {
+                    Identifier = Course.StateCourseId,
+                    IdentifierTypeName = IdentifierTypes.SeaCourseId
+                });
             }
+            if (!String.IsNullOrEmpty(Course.NationalCourseId)) {
+                courseIds.Add(new IdentifierType() {
+                    Identifier = Course.NationalCourseId,
+                    IdentifierTypeName = IdentifierTypes.NcesCourseId
+                });
+            }
+            ca.Achievement.CourseIds = courseIds.ToArray();
 
             return ca;
+        }
+
+        public static class VerificationTypes
+        {
+            public const string Signed = "Signed";
         }
 
         private static class AchievementTypes
@@ -540,6 +582,22 @@ namespace Infotekka.ND.ClrExtract
             public const string Transcript = "ext:Transcript";
             public const string SchoolEnrollment = "ext:SchoolEnrollment";
             public const string SchoolExit = "ext:SchoolExit";
+            public const string Award = "Award";
+        }
+
+        public static class IdentifierTypes
+        {
+            public const string LeaSchoolId = "ext:LeaSchoollId";
+            public const string SeaSchoolId = "ext:SeaSchoolId";
+            public const string NcesSchoolId = "ext:NcesSchoolId";
+
+            public const string LeaStudentId = "ext:LeaStudentlId";
+            public const string SeaStudentId = "ext:SeaStudentId";
+            public const string NdheStudentId = "ext:NDHEStudentId";
+
+            public const string LeaCourseId = "ext:LeaCourselId";
+            public const string SeaCourseId = "ext:SeaCourseId";
+            public const string NcesCourseId = "ext:NcesCourseId";
         }
     }
 }

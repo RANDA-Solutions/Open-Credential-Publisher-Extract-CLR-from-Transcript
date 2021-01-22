@@ -24,6 +24,13 @@ namespace Infotekka.ND.ClrExtract.CLR
         [JsonProperty("telephone")]
         public string Telephone { get; set; }
 
-        ///ndt:schoolInfo
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        [JsonProperty("identifiers")]
+        public IdentifierType[] Identifiers { get; set; }
+
+        [JsonProperty("verification")]
+        public string Verification { get; set; }
     }
 }

@@ -26,7 +26,11 @@ namespace Infotekka.ND.ClrExtract
 
         string StateSubjectDesc { get; }
 
+        string LocalCourseId { get; }
+
         string StateCourseId { get; }
+
+        string NationalCourseId { get; }
 
         string LetterGrade { get; }
 

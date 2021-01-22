@@ -35,5 +35,11 @@ namespace Infotekka.ND.ClrExtract.CLR
 
         [JsonProperty("results")]
         public ResultType[] Results { get; set; }
+
+        [JsonProperty("activityEndDate")]
+        public DateTime? ActivityEndDate { get; set; }
+
+        [JsonProperty("verification")]
+        public VerificationType Verification { get; set; }
     }
 }

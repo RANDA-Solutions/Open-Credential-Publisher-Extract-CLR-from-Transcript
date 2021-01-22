@@ -14,5 +14,8 @@ namespace Infotekka.ND.ClrExtract.CLR
 
         [JsonProperty("identity")]
         public string Identity { get; set; }
+
+        [JsonProperty("hashed")]
+        public bool Hashed { get; set; }
     }
 }

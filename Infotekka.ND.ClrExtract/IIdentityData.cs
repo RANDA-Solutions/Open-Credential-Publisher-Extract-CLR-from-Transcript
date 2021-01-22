@@ -8,6 +8,6 @@ namespace Infotekka.ND.ClrExtract
     {
         string Identifier { get; }
 
-        string IdentificationSystem { get; }
+        string IdentificatierType { get; }
     }
 }

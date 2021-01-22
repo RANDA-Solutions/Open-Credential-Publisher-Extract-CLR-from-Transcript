@@ -42,10 +42,16 @@ namespace Infotekka.ND.ClrExtract.CLR
         [JsonProperty("tags")]
         public string[] Tags { get; set; }
 
-        [JsonProperty("hsx:Course")]
-        public CourseType Course { get; set; }
-
         [JsonProperty("alignments")]
         public AlignmentType[] Alignments { get; set; }
+
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("identifiers")]
+        public IdentifierType[] CourseIds { get; set; }
+
+        [JsonProperty("image")]
+        public string Image { get; set; }
     }
 }

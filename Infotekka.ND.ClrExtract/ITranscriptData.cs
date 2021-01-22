@@ -68,5 +68,7 @@ namespace Infotekka.ND.ClrExtract
         IIdentityData[] DistrictIds { get; }
 
         IAddressData DistrictAddress { get; }
+
+        IAwardData[] Awards { get; set; }
     }
 }

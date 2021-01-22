@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace Infotekka.ND.ClrExtract.CLR
 {
-    public class DemographicType
+    public class VerificationType
     {
-        [JsonProperty("@context")]
-        public string Context { get; set; }
-
         [JsonProperty("type")]
         public string Type { get; set; }
-
-        [JsonProperty("birthdate")]
-        public DateTime Birthdate { get; set; }
     }
 }

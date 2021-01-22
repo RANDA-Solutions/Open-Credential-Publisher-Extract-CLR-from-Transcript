@@ -14,5 +14,8 @@ namespace Infotekka.ND.ClrExtract.CLR
 
         [JsonProperty("value")]
         public string Value { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
     }
 }
